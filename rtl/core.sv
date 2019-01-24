@@ -2,9 +2,10 @@
 `include "hw_control.sv"
 `include "EX.sv"
 `include "reg.sv"
-`include "sign_extend.sv"
+`include "se.sv"
 
-module riscv_core(
+module riscv_core#(
+				parameter DATA_WIDTH = 32 )(
   input clk,
   input reset,
   

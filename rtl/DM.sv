@@ -10,19 +10,23 @@ module memory(
 	);
 
 
-reg [31:0]mem[255:0];
+  reg [31:0]mem[1023:0];
   int file;
   
 initial begin
-    $readmemb("dat_mem.mem",mem);
+  file = $fopen("dat_mem.txt", "w"); 
+ 
+
 end
 
 always @(posedge clk) begin
   if (reset) begin
 	if (rd_en == 1) 
-		m_rd_dat <= mem[m_addr];
+      m_rd_dat <= mem[m_addr];
     if (wr_en == 1) begin
-		mem[m_addr] <= m_wr_dat;
+      mem[m_addr] <= m_wr_dat;
+      $display("Data :  %h written at Address : %h \n", m_wr_dat, m_addr);
+      $fwrite(file,"%h \n",m_wr_dat);
     end
   end
     else m_rd_dat <= 32'b0;
