@@ -110,7 +110,7 @@ assign alu_in2 = Alusrc2 ? Imm : rd2;
             2'b00: m_wr_dat <= rd2 & 32'h000000ff;
             2'b01: m_wr_dat <= rd2 & 32'h0000ffff;
             2'b10: m_wr_dat <= rd2;
-          default: m_wr_dat <= rd2;
+	    2'b11: m_wr_dat <= rd2;
         endcase
     end    
   end
