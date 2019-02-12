@@ -85,7 +85,7 @@ sign_extend_B se_B(.se_B_in1(instr[31:25]),.se_B_in2(instr[11:7]),.se_B_imm(se_B
   
 always @(*) begin
 case (ImSel)// Mux for Immediate select
-  2'b00: Imm <= csr_rd;
+  2'b00: Imm <= csr_rd_data;
   2'b01: Imm <= se_I_imm;
   2'b10: Imm <= se_S_imm;
   2'b11: Imm <= se_U_imm;
