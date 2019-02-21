@@ -14,9 +14,8 @@ module memory(
   int file;
   
 initial begin
+  $readmemh("mem.txt",mem);
   file = $fopen("dat_mem.txt", "w"); 
- 
-
 end
 
 always @(posedge clk) begin
