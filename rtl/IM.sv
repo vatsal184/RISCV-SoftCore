@@ -14,7 +14,7 @@ initial begin
 
 end
   always @(posedge clk) begin
-    if (reset)  instr <= IM[pc];
+      if (reset)  instr <= IM[pc >> 2];
     else instr <= 32'b0;
   end
 
