@@ -36,7 +36,7 @@ end
   
 always @(*) begin
     if(!fence)  prev  <= pc;
-  	next_pc = pc + 32'd1 ;
+  	next_pc = pc + 32'd4 ;
 	pc_out <= reset ? (pc_sel ? pc_in1 : pc_in0) : 32'b0;
 end
   
