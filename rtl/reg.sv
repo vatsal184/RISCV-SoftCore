@@ -19,19 +19,19 @@ initial begin
   end
 end
 
-  always @ (posedge clk)	begin	// read
+  always @ (*)	begin	// read
     if (reset & (rs1!=5'b0)) begin
-      rd1 <= ram[rs1];
+      rd1 = ram[rs1];
     end
     else begin
-      rd1 <= 32'b0;
+      rd1 = 32'b0;
     end
     
     if (reset & (rs2!=5'b0)) begin
-      rd2 <= ram[rs2];
+      rd2 = ram[rs2];
     end
     else begin
-      rd2 <= 32'b0;
+      rd2 = 32'b0;
     end
   end
 
@@ -47,6 +47,7 @@ end
     end
     end
   end // always @(posedge clk)
+
 
  
 endmodule // registers
