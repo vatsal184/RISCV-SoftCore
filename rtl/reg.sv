@@ -27,6 +27,8 @@ end
       rd1 = 32'b0;
     end
     
+    uvm_config_db #(reg[31:0])::set(uvm_root::get(),"*","reg_rd_dat", rd1);
+    
     if (reset & (rs2!=5'b0)) begin
       rd2 = ram[rs2];
     end
@@ -39,10 +41,10 @@ end
   if(reset & regWrite ) begin
     if (rd==5'b0) begin
       ram[rd] <= 32'b0;
-      $display("REG WRITE :		 %d		at		x%d",32'd0 , rd);
+//      $display("REG WRITE :		 %d		at		x%d",32'd0 , rd);
     end
     else begin
-      $display("REG WRITE :		 %d		at		x%d",reg_wr_dat , rd);
+//      $display("REG WRITE :		 %d		at		x%d",reg_wr_dat , rd);
       ram[rd] <= reg_wr_dat;
     end
     end

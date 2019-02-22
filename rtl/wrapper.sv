@@ -1,25 +1,24 @@
 `include "csr.sv"
-`include "IM.sv"
 `include "DM.sv"
 `include "core.sv"
 
 
-module riscv_wrapper#(parameter INS_BASE_ADDR = 32'h0,
-                     parameter DATA_BASE_ADDR = 32'h80000000,
-                     parameter DATA_WIDTH = 32)(
-	input clk,
-	input reset);
+module riscv_wrapper(  
   
-  wire [31:0] pc , csr_wr_data, csr_rd_data, m_addr, m_wr_dat;
-  reg [31:0]instr ,m_rd_dat;
+      input clk,
+      input reset,
+  output [31:0]pc,
+  input [31:0]instr);
+
+
+  wire [31:0] csr_wr_data, csr_rd_data, m_addr, m_wr_dat;
+  reg [31:0]m_rd_dat;
   wire [11:0]csr_rd_addr;
   
-  riscv_core#(
-    		.DATA_WIDTH(DATA_WIDTH)  )
-  			cpu(
+  riscv_core 			cpu(
     		.clk(clk),.reset(reset),
                  
-            .pc(pc),.instr(instr),
+    		.pc(pc),.instr_in(instr),
             
             .csr(csr),
             .csr_rd_addr(csr_rd_addr),
@@ -33,12 +32,12 @@ module riscv_wrapper#(parameter INS_BASE_ADDR = 32'h0,
             .m_rd_dat(m_rd_dat)
            );
 
- IM ins_mem(.clk(clk),
+/* IM ins_mem(.clk(clk),
             .reset(reset),
             .pc(pc + INS_BASE_ADDR),
             .instr(instr)
            );
-
+*/	
   
 cs_reg csre(.clk(clk),
             .reset(reset),
@@ -64,7 +63,7 @@ memory mem(.clk(clk),
   $display("Instruction = 0x%h  ",instr);
 //  $display("ALU output  = %d  ",m_addr); 
 //  if (MemWrite) $display("Data 0x%h written to address %d",m_wr_dat, m_addr);
-    $display("---------------------------------------------------------------");*/
-end
+    $display("---------------------------------------------------------------");
+end*/
   
   endmodule
