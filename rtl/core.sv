@@ -12,6 +12,8 @@ module riscv_core#(
   output reg [31:0]pc,
   input [31:0]instr_in,
   
+  output trap,
+  
   output csr, 
   output [11:0]csr_rd_addr,
   output [31:0] csr_wr_data,
@@ -24,7 +26,8 @@ module riscv_core#(
   input [31:0]m_rd_dat
   
 );
-
+   
+  
 wire [31:0]pc_out;
 
 wire csri;
@@ -56,6 +59,7 @@ always @(posedge clk) begin
   end
 end
    
+assign trap = (instr == 32'h00100073) ? 1 : 0;
 assign csri = csr & funct[2];
 assign funct = instr[14:12];
 assign IF_out1 = csri? se_csr_imm : rd1;
@@ -65,7 +69,7 @@ assign alu_out_h = alu_out & 32'hfffffffe;
 assign invert = (instr[31:25] == 7'b0100000) ? 1 : 0 ;
 
 
-control_unit  debug(.reset(reset),.opcode(instr[6:0]),.jump(jump),.ImSel(ImSel),.branch(branch),.Alusrc1(Alusrc1),.Alusrc2(Alusrc2),.MemRead(MemRead),.MemWrite(MemWrite),.ALUop(ALUop),.regWrite(regWrite),.H_sel(H_sel),.csr(csr),.wr_sel(wr_sel),.funct(funct),.invert(invert),.fence(fence));   // control unit
+  control_unit  debug(.reset(reset),.opcode(instr[6:0]),.jump(jump),.ImSel(ImSel),.branch(branch),.Alusrc1(Alusrc1),.Alusrc2(Alusrc2),.MemRead(MemRead),.MemWrite(MemWrite),.ALUop(ALUop),.regWrite(regWrite),.H_sel(H_sel),.csr(csr),.wr_sel(wr_sel),.funct(funct),.invert(invert),.fence(fence));   // control unit
  
 sign_extend_csr se_csr(.se_csr_in(instr[19:15]),.se_csr_imm(se_csr_imm));	// Sign extend of CSR 
 
