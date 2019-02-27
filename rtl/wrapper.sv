@@ -7,6 +7,7 @@ module riscv_wrapper(
   
       input clk,
       input reset,
+  output trap,
   output [31:0]pc,
   input [31:0]instr);
 
@@ -19,6 +20,8 @@ module riscv_wrapper(
     		.clk(clk),.reset(reset),
                  
     		.pc(pc),.instr_in(instr),
+    
+    		.trap(trap),
             
             .csr(csr),
             .csr_rd_addr(csr_rd_addr),
