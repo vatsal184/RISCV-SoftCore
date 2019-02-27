@@ -6,6 +6,7 @@ module test();
 
 reg clk;
 reg reset;
+  reg trap;
 
 initial begin
   $dumpfile("dump.vcd");
@@ -17,10 +18,10 @@ end
 
 always #2 clk = ~clk;
 
-  riscv_wrapper test(.clk(clk),.reset(reset));
+  riscv_wrapper test(.clk(clk),.reset(reset),.trap(trap));
 initial begin
 
-#200 $finish;
+  if (trap) $finish;
 end
  
 endmodule
