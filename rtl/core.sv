@@ -78,7 +78,7 @@ sign_extend_csr se_csr(.se_csr_in(instr[19:15]),.se_csr_imm(se_csr_imm));	// Sig
   assign csr_rd_addr = instr[31:20];
   assign csr_wr_data = alu_out[31:0];
  
-  sign_extend_I se_I(.se_I_in(instr[31:20]),.funct(funct),.se_I_imm(se_I_imm));	// Sign extend of I Type
+  sign_extend_I se_I(.se_I_in(instr[31:20]),.opcode(instr[6:0]),.funct(funct),.se_I_imm(se_I_imm));	// Sign extend of I Type
 
 sign_extend_S se_S(.se_S_in1(instr[31:25]),.se_S_in2(instr[11:7]),.se_S_imm(se_S_imm));	// Sign extend of S Type
 
@@ -102,8 +102,9 @@ case (ImSel)// Mux for Immediate select
 endcase 
 end
 
-//  EX Stage  /////////////////////////////////////////////////////////////
 
+  
+  
 wire [31:0]alu_in1,alu_in2;
 
 assign alu_in1 = Alusrc1 ? pc : IF_out1;	// Muxes for input to ALU respectively
@@ -112,43 +113,49 @@ assign alu_in2 = Alusrc2 ? Imm : rd2;
   ALU compute(.alu_in1(alu_in1),.alu_in2(alu_in2),.ALUop(ALUop),.funct(funct),.invert(invert),.zero(zero),.less_than(less_than),.alu_out(m_addr));
 
 
-//   DM   ////////////////////////////////////////////////////////////////
 
+  
   always @(*) begin
     if (reset) begin
     if (ALUop[1]) begin  
        case (funct[1:0])
-            2'b00: m_wr_dat <= rd2 & 32'h000000ff;
-            2'b01: m_wr_dat <= rd2 & 32'h0000ffff;
-            2'b10: m_wr_dat <= rd2;
-          	2'b11: m_wr_dat <= rd2;
+            2'b00: m_wr_dat = rd2 & 32'h000000ff;
+            2'b01: m_wr_dat = rd2 & 32'h0000ffff;
+            2'b10: m_wr_dat = rd2;
         endcase
-    end   
-    end
+    end  
+    end 
     else m_wr_dat <= 32'h0;
-  end
-  
-//   WB   //////////////////////////////////////////////////////////////////////
 
+  end
+
+  
 always @(*) begin 
 case (wr_sel)
-  2'b00: reg_wr_dat <= m_addr;
-  2'b01: begin
-    if ( ALUop[1]) begin
+  2'b00: reg_wr_dat = m_addr;
+  2'b01: if ( ALUop[1]) begin
         case (funct[1:0])
-            2'b00: reg_wr_dat <= m_rd_dat & 32'h000000ff;
-            2'b01: reg_wr_dat <= m_rd_dat & 32'h0000ffff;
-            2'b10: reg_wr_dat <= m_rd_dat;
-          default: reg_wr_dat <= m_rd_dat;
+            2'b00: reg_wr_dat = m_rd_dat & 32'h000000ff;
+            2'b01: reg_wr_dat = m_rd_dat & 32'h0000ffff;
+            2'b10: reg_wr_dat = m_rd_dat;
         endcase
-    end 
-    else begin
-     reg_wr_dat <= m_rd_dat;
-    end
-  end
-  2'b10: reg_wr_dat <= Imm; 
-  2'b11: reg_wr_dat <= next_pc; 
+    	end 
+  2'b10: reg_wr_dat = Imm; 
+  2'b11: reg_wr_dat = next_pc; 
 endcase
-end
+end 
+  
+  always @(*) begin   
+    
+  if (MemRead)    begin
+    uvm_config_db #(reg[31:0])::set(uvm_root::get(),"*","m_addr", m_addr << 2);   
+    uvm_config_db #(reg[31:0])::set(uvm_root::get(),"*","m_dat", (instr[11:7] == 5'b00000) ? 32'b0 : reg_wr_dat);
+  end
 
+  if (MemWrite)    begin
+    uvm_config_db #(reg[31:0])::set(uvm_root::get(),"*","m_addr", m_addr << 2);   
+    uvm_config_db #(reg[31:0])::set(uvm_root::get(),"*","m_dat", m_wr_dat);
+  end
+  end
+  
 endmodule
