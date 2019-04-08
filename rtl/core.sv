@@ -10,7 +10,7 @@ module riscv_core#(
   input reset,
   
   output reg [31:0]pc,
-  input [31:0]instr_in,
+  input [31:0]instr,
   
   output trap,
   
@@ -44,20 +44,18 @@ wire [31:0]alu_out;
 wire [31:0] rd1, rd2, se_csr_imm, se_B_imm, se_J_imm, se_I_imm, se_S_imm, se_U_imm, csr_rd,IF_out1, next_pc;
 wire jump, branch, Alusrc1, Alusrc2, regWrite, H_sel, c, invert;	
 wire [1:0] ImSel, wr_sel;
-wire [31:0] mtvec, mstatus, predecessor, successor;
+wire [31:0] predecessor, successor;
 wire [2:0]ALUop;
 reg [31:0]instr;
   
 always @(posedge clk) begin
   if (reset) begin
-    pc <=  pc_out;
-    instr  <= instr_in;
-    r_flag <= 0;
+    pc =  pc_out ;
+    r_flag = 0;
   end
   else begin
-    pc <= 32'h0 ;
-    instr <= 32'h0;
-    r_flag <= 1;
+    pc = 32'h0 ;
+    r_flag = 1;
   end
 end
    
@@ -80,7 +78,7 @@ sign_extend_csr se_csr(.se_csr_in(instr[19:15]),.se_csr_imm(se_csr_imm));	// Sig
   assign csr_rd_addr = instr[31:20];
   assign csr_wr_data = alu_out[31:0];
  
-  sign_extend_I se_I(.se_I_in(instr[31:20]),.opcode(instr[6:0]),.funct(funct),.se_I_imm(se_I_imm));	// Sign extend of I Type
+sign_extend_I se_I(.se_I_in(instr[31:20]),.opcode(instr[6:0]),.funct(funct),.se_I_imm(se_I_imm));	// Sign extend of I Type
 
 sign_extend_S se_S(.se_S_in1(instr[31:25]),.se_S_in2(instr[11:7]),.se_S_imm(se_S_imm));	// Sign extend of S Type
 
@@ -90,9 +88,9 @@ sign_extend_J se_J(.se_J_in(instr[31:12]),.se_J_imm(se_J_imm));	// Sign extend o
 
 sign_extend_B se_B(.se_B_in1(instr[31:25]),.se_B_in2(instr[11:7]),.se_B_imm(se_B_imm));	// Sign extend of B 
 
-  registers regfetch(.clk(clk),.reset(reset),.rs1(instr[19:15]),.rs2(instr[24:20]),.rd(instr[11:7]),.reg_wr_dat(reg_wr_dat),.regWrite(regWrite),.rd1(rd1),.rd2(rd2));	// Register
+registers regfetch(.clk(clk),.reset(reset),.rs1(instr[19:15]),.rs2(instr[24:20]),.rd(instr[11:7]),.reg_wr_dat(reg_wr_dat),.regWrite(regWrite),.rd1(rd1),.rd2(rd2));	// Register
 
-  hw_control hw(.r_flag(r_flag),.reset(reset),.next_pc(next_pc),.predecessor(predecessor),.successor(successor),.pc(pc),.fence(fence),.Imm_H(Imm_H),.H_sel(H_sel),.funct(funct),.zero(zero),.less_than(less_than),.branch(branch),.jump(jump),.alu_out_h(alu_out_h),.pc_out(pc_out)); // Hardware control - jump branch and PC
+hw_control hw(.r_flag(r_flag),.reset(reset),.next_pc(next_pc),.predecessor(predecessor),.successor(successor),.pc(pc),.fence(fence),.Imm_H(Imm_H),.H_sel(H_sel),.funct(funct),.zero(zero),.less_than(less_than),.branch(branch),.jump(jump),.alu_out_h(alu_out_h),.pc_out(pc_out)); // Hardware control - jump branch and PC
 
   
 always_comb begin
@@ -109,10 +107,10 @@ end
   
 wire [31:0]alu_in1,alu_in2;
 
-assign alu_in1 = Alusrc1 ? pc : IF_out1;	// Muxes for input to ALU respectively
+assign alu_in1 = Alusrc1 ? pc : IF_out1;
 assign alu_in2 = Alusrc2 ? Imm : rd2;
 
-  ALU compute(.alu_in1(alu_in1),.alu_in2(alu_in2),.ALUop(ALUop),.funct(funct),.invert(invert),.zero(zero),.less_than(less_than),.alu_out(m_addr));
+ALU compute(.alu_in1(alu_in1),.alu_in2(alu_in2),.ALUop(ALUop),.funct(funct),.invert(invert),.zero(zero),.less_than(less_than),.alu_out(m_addr));
 
 
 
@@ -143,11 +141,8 @@ case (wr_sel)
     	end 
   2'b10: reg_wr_dat = Imm; 
   2'b11: reg_wr_dat = next_pc; 
-endcase
+endcase 
 end 
   
-always_comb begin   
-    
-
   
 endmodule
