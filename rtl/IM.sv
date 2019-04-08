@@ -1,7 +1,7 @@
+
 module IM(
     input clk,
   	input reset,
-//  	input [31:0]INS_BASE_ADDR,
     input [31:0]pc,
     output reg [31:0]instr
     );
@@ -14,8 +14,8 @@ initial begin
 
 end
   always @(posedge clk) begin
-    if (reset)  instr <= IM[pc];
-    else instr <= 32'b0;
+    if (reset)	instr = IM[pc >> 2];
+    else instr = 32'b0;
   end
 
 endmodule
