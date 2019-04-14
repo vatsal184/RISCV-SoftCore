@@ -1,100 +1,135 @@
-`include "control_unit.sv"
-`include "hw_control.sv"
-`include "EX.sv"
 `include "reg.sv"
-`include "se.sv"
+`include "control_unit.sv"
+`include "sign_extend.sv"
+`include "EX.sv"
+`include "pc_control.sv"
 
 module riscv_core#(
-				parameter DATA_WIDTH = 32 )(
+				parameter XLEN = 32,
+				IRQ = 0)(
   input clk,
   input reset,
   
   output reg [31:0]pc,
-  input [31:0]instr,
+  input [31:0]instr_in,
   
   output trap,
   
-  output csr, 
-  output [11:0]csr_rd_addr,
-  output [31:0] csr_wr_data,
+  // PLIC
+  input EIP,
+  input [31:0]irq_handler,
+  output IRQ_complete,
+  
+  
+  // CSR
+  output csr_rd,
+  output reg csr_wr, 
+  output reg [11:0]csr_rd_addr,
+  output reg [11:0]csr_wr_addr,
+  output reg [31:0] csr_wr_data,
   input [31:0]csr_rd_data,
   
-  output MemRead,
-  output MemWrite,
-  output [31:0]m_addr,
+  
+  // DATA MEMORY
+  output reg MemRead_l2,
+  output reg MemWrite_l2,
+  output reg [31:0]m_addr,
   output reg [31:0]m_wr_dat,
   input [31:0]m_rd_dat
   
 );
-   
   
-wire [31:0]pc_out;
-reg r_flag; // for reset
-wire csri;
-reg [31:0] csr_wr;
-reg [31:0] temp;
-wire [31:0]Imm_H;
-reg [31:0] Imm;
-wire [2:0]funct;
-reg [31:0]reg_wr_dat;
-wire [31:0]alu_out_h;
-wire [31:0]alu_out;
+  
+/////////////////////////////////////////////////////////////
+//	IF
+/////////////////////////////////////////////////////////////
 
+reg [31:0]  instr, pc_l1;
+reg reset_l1; 
   
-wire [31:0] rd1, rd2, se_csr_imm, se_B_imm, se_J_imm, se_I_imm, se_S_imm, se_U_imm, csr_rd,IF_out1, next_pc;
-wire jump, branch, Alusrc1, Alusrc2, regWrite, H_sel, c, invert;	
-wire [1:0] ImSel, wr_sel;
-wire [31:0] predecessor, successor;
-wire [2:0]ALUop;
-reg [31:0]instr;
-  
-always @(posedge clk) begin
-  if (reset) begin
-    pc =  pc_out ;
-    r_flag = 0;
+  always@(posedge clk) begin
+    instr <= reset ? instr_in : 32'h0;
+    pc_l1 <= pc; 
+    reset_l1 <= reset;
   end
-  else begin
-    pc = 32'h0 ;
-    r_flag = 1;
-  end
-end
    
-assign trap = (instr == 32'h00100073) ? 1 : 0;
-assign csri = csr & funct[2];
-assign funct = instr[14:12];
-assign IF_out1 = csri? se_csr_imm : rd1;
-assign Imm_H = H_sel? se_J_imm : se_B_imm;
-assign alu_out = (funct[1] | (jump & ~H_sel))? m_addr : Imm;
-assign alu_out_h = alu_out & 32'hfffffffe;
-assign invert = (instr[31:25] == 7'b0100000) ? 1 : 0 ;
-
-
-  control_unit  debug(.reset(reset),.opcode(instr[6:0]),.jump(jump),.ImSel(ImSel),.branch(branch),.Alusrc1(Alusrc1),.Alusrc2(Alusrc2),.MemRead(MemRead),.MemWrite(MemWrite),.ALUop(ALUop),.regWrite(regWrite),.H_sel(H_sel),.csr(csr),.wr_sel(wr_sel),.funct(funct),.invert(invert),.fence(fence));   // control unit
+/////////////////////////////////////////////////////////////
+//	ID & EX STAGE & pc_control
+/////////////////////////////////////////////////////////////
  
-sign_extend_csr se_csr(.se_csr_in(instr[19:15]),.se_csr_imm(se_csr_imm));	// Sign extend of CSR 
+  
+  
+ wire invert;
+ wire [1:0] im_sel, wr_sel;
+ wire [2:0] ALUop, funct;
+ control_unit  debug(.reset(reset_l1),
+                     .opcode(instr[6:0]),
+                     .jump(jump),
+                     .im_sel(im_sel),
+                     .branch(branch),
+                     .Alusrc1(Alusrc1),
+                     .Alusrc2(Alusrc2),
+                     .MemRead(MemRead),
+                     .MemWrite(MemWrite),
+                     .ALUop(ALUop),
+                     .regWrite(regWrite),
+                     .jal(jal),
+                     .csr(csr_rd),
+                     .wr_sel(wr_sel),
+                     .funct(funct),
+                     .invert(invert),
+                     .fence(fence)
+                    );
+  
+  
+  
+wire [31:0] rd1, rd2;
+reg [31:0] reg_wr_dat;
+reg [4:0] rd_l2; 
+reg regWrite_l2;
+registers regfetch (.clk(clk),
+                    .reset(reset),
+                    .rs1(instr[19:15]),
+                    .rs2(instr[24:20]),
+                    .rd(rd_l2),
+                    .reg_wr_dat(reg_wr_dat),
+                    .regWrite(regWrite_l2),
+                    .rd1(rd1),
+                    .rd2(rd2)
+                    );
+  
+  
+wire [31:0]se_I_imm, se_S_imm, se_U_imm, se_J_imm, se_B_imm, se_csr_imm; 
+sign_extend_I se_I(.se_I_in(instr[31:20]),
+                   .opcode(instr[6:0]),
+                   .funct(funct),
+                   .se_I_imm(se_I_imm));
 
-  wire [4:0]rd;
-  assign rd = instr[11:7];
-  assign csr_rd_addr = instr[31:20];
-  assign csr_wr_data = alu_out[31:0];
- 
-sign_extend_I se_I(.se_I_in(instr[31:20]),.opcode(instr[6:0]),.funct(funct),.se_I_imm(se_I_imm));	// Sign extend of I Type
+sign_extend_S se_S(.se_S_in1(instr[31:25]),
+                   .se_S_in2(instr[11:7]),
+                   .se_S_imm(se_S_imm));
 
-sign_extend_S se_S(.se_S_in1(instr[31:25]),.se_S_in2(instr[11:7]),.se_S_imm(se_S_imm));	// Sign extend of S Type
+sign_extend_U se_U(.se_U_in(instr[31:12]),
+                   .se_U_imm(se_U_imm));
 
-sign_extend_U se_U(.se_U_in(instr[31:12]),.se_U_imm(se_U_imm));	// Sign extend of U Type
+sign_extend_J se_J(.se_J_in(instr[31:12]),
+                   .se_J_imm(se_J_imm));
 
-sign_extend_J se_J(.se_J_in(instr[31:12]),.se_J_imm(se_J_imm));	// Sign extend of J 
-
-sign_extend_B se_B(.se_B_in1(instr[31:25]),.se_B_in2(instr[11:7]),.se_B_imm(se_B_imm));	// Sign extend of B 
-
-registers regfetch(.clk(clk),.reset(reset),.rs1(instr[19:15]),.rs2(instr[24:20]),.rd(instr[11:7]),.reg_wr_dat(reg_wr_dat),.regWrite(regWrite),.rd1(rd1),.rd2(rd2));	// Register
-
-hw_control hw(.r_flag(r_flag),.reset(reset),.next_pc(next_pc),.predecessor(predecessor),.successor(successor),.pc(pc),.fence(fence),.Imm_H(Imm_H),.H_sel(H_sel),.funct(funct),.zero(zero),.less_than(less_than),.branch(branch),.jump(jump),.alu_out_h(alu_out_h),.pc_out(pc_out)); // Hardware control - jump branch and PC
-
+sign_extend_B se_B(.se_B_in1(instr[31:25]),
+                   .se_B_in2(instr[11:7]),
+                   .se_B_imm(se_B_imm));
+  
+sign_extend_csr se_csr(.se_csr_in(instr[19:15]),
+                       .se_csr_imm(se_csr_imm));
+  
+  
+wire [31:0] IF_out1;
+reg [31:0]Imm;
+  
+assign IF_out1 = csr_rd & instr[14] ? se_csr_imm : rd1;
   
 always_comb begin
-case (ImSel)// Mux for Immediate select
+  case (im_sel)// Mux for Immediate select
   2'b00: Imm = csr_rd_data;
   2'b01: Imm = se_I_imm;
   2'b10: Imm = se_S_imm;
@@ -102,47 +137,100 @@ case (ImSel)// Mux for Immediate select
 endcase 
 end
 
+wire [31:0] alu_in1, alu_in2, Imm_pc, Imm_jalr;
 
-  
-  
-wire [31:0]alu_in1,alu_in2;
-
+assign funct = instr[14:12];
+assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (csr_rd & (funct[1:0]== 2'b11)) ? 1 : 0 ; 
 assign alu_in1 = Alusrc1 ? pc : IF_out1;
 assign alu_in2 = Alusrc2 ? Imm : rd2;
+assign Imm_pc = jal ? se_J_imm : se_B_imm;
+assign Imm_jalr = (jump & ~jal) ? (Imm & 32'hfffffffe) : 32'h0;  
+assign csr_wr_addr = instr[31:20];
+assign csr_rd_addr = instr[31:20];   
 
-ALU compute(.alu_in1(alu_in1),.alu_in2(alu_in2),.ALUop(ALUop),.funct(funct),.invert(invert),.zero(zero),.less_than(less_than),.alu_out(m_addr));
+wire [31:0]alu_out, next_pc;
+  
+  ALU compute (.reset(reset_l1),
+               .alu_in1(alu_in1),
+               .alu_in2(alu_in2),
+               .ALUop(ALUop),
+               .invert(invert),
+               .zero(zero),
+               .less_than(less_than),
+               .alu_out(alu_out));
 
+  pc_control hw(.reset(reset_l1), 
+                .pc(pc_l1),
+                .Imm_pc(Imm_pc),
+                .funct(funct),
+                .jal(jal),
+                .zero(zero),
+                .less_than(less_than),
+                .branch(branch),
+                .jump(jump),
+                .Imm_jalr(Imm_jalr),
+                .next_pc(next_pc));
 
+  
+  reg [31:0] rd2_l2, Imm_l2;
+  reg [2:0] ALUop_l2, funct_l2;
+  reg [1:0] wr_sel_l2;
+  reg reset_l2;  
+  
+  always @ (posedge clk) begin
+    reset_l2 <= reset_l1;
+    csr_wr <= csr_rd;
+  	csr_wr_data <= csr_wr ? (funct[1] ? alu_out : alu_in1): 32'b0;
+    m_addr <= alu_out;
+    MemWrite_l2 <= MemWrite;
+    MemRead_l2 <= MemRead;
+    rd2_l2 <= rd2;
+    rd_l2 <= instr[11:7];
+    regWrite_l2 <= regWrite;
+    ALUop_l2 <= ALUop;
+    funct_l2 <= funct;
+    wr_sel_l2 <= wr_sel;
+    Imm_l2 <= Imm;
+    pc <= reset_l1 ? next_pc : 32'h0; // tbc
+  end
+  
+  
+/////////////////////////////////////////////////////////////
+//	WB STAGE
+/////////////////////////////////////////////////////////////  
 
   
 always_comb begin
-    if (reset) begin
-    if (ALUop[1]) begin  
-       case (funct[1:0])
-            2'b00: m_wr_dat = rd2 & 32'h000000ff;
-            2'b01: m_wr_dat = rd2 & 32'h0000ffff;
-            2'b10: m_wr_dat = rd2;
-        endcase
+  if (reset_l2) begin
+    if (ALUop_l2[1]) begin  
+      case (funct_l2[1:0])
+            2'b00: m_wr_dat = rd2_l2 & 32'h000000ff;
+            2'b01: m_wr_dat = rd2_l2 & 32'h0000ffff;
+            2'b10: m_wr_dat = rd2_l2;
+            2'b11: m_wr_dat = rd2_l2;
+      endcase
     end  
-    end 
-    else m_wr_dat <= 32'h0;
+  end 
+  else m_wr_dat <= 32'h0;
 end
 
   
-always_comb begin 
-case (wr_sel)
-  2'b00: reg_wr_dat = m_addr;
-  2'b01: if ( ALUop[1]) begin
-        case (funct[1:0])
-            2'b00: reg_wr_dat = m_rd_dat & 32'h000000ff;
-            2'b01: reg_wr_dat = m_rd_dat & 32'h0000ffff;
-            2'b10: reg_wr_dat = m_rd_dat;
-        endcase
-    	end 
-  2'b10: reg_wr_dat = Imm; 
-  2'b11: reg_wr_dat = next_pc; 
-endcase 
+always_comb begin
+  if (reset_l2) begin
+    case (wr_sel_l2)
+      2'b00: reg_wr_dat = m_addr;
+      2'b01: if ( ALUop_l2[1]) begin
+        case (funct_l2[1:0])
+                2'b00: reg_wr_dat = m_rd_dat & 32'h000000ff;
+                2'b01: reg_wr_dat = m_rd_dat & 32'h0000ffff;
+                2'b10: reg_wr_dat = m_rd_dat;
+            endcase
+            end 
+      2'b10: reg_wr_dat = Imm_l2; 
+      2'b11: reg_wr_dat = next_pc; 
+    endcase 
+  end
+  else reg_wr_dat = 32'h0;
 end 
-  
   
 endmodule

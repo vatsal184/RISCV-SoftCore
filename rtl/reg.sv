@@ -1,7 +1,5 @@
-
-
 module registers(
-	input clk,
+  	input clk,
   	input reset,
 	input [4:0] rs1,
 	input [4:0] rs2,
@@ -12,37 +10,36 @@ module registers(
 	output reg [31:0] rd2
 	);
 
-reg [31:0] ram [31:0];
+  reg [31:0] registry [31:1];
   
-  always @ (*)	begin	// read
-    if (reset & (rs1!=5'b0)) begin
-      rd1 = ram[rs1];
-    end
-    else begin
-      rd1 = 32'b0;
-    end
-    
-    uvm_config_db #(reg[31:0])::set(uvm_root::get(),"*","reg_rd_dat", rd1);
-    
-    if (reset & (rs2!=5'b0)) begin
-      rd2 = ram[rs2];
-    end
-    else begin
-      rd2 = 32'b0;
-    end
+  initial begin
+    registry[1] = 32'h0;
+    registry[2] = 32'h0;
+    registry[3] = 32'h0;
+    registry[4] = 32'h0;
+    registry[5] = 32'h0;
+    registry[6] = 32'h0;
+    registry[7] = 32'h0;
+    registry[8] = 32'h0;
+    registry[9] = 32'h0;
+    registry[10] = 32'h0;
+    registry[11] = 32'h0;
+    registry[12] = 32'h0;
+    registry[13] = 32'h0;
+    registry[14] = 32'h0;
+    registry[15] = 32'h0;
+    registry[16] = 32'h0;
   end
-
-  always @(posedge clk) begin	//	write
-    
-  if(reset & regWrite ) begin
-    if (rd==5'b0)
-      ram[rd] <= 32'b0;
-    else 
-      ram[rd] <= reg_wr_dat;
-    end
-     
-  end // always @(posedge clk)
-
-
- 
+  
+  always_comb begin
+  	rd1 =  (reset & (rs1!=5'b0)) ? registry[rs1] : 32'h0;
+  	rd2 =  (reset & (rs2!=5'b0)) ? registry[rs2] : 32'h0;
+  end
+  
+  
+  always@ (posedge clk) begin    
+    if(reset & regWrite & (rd!=5'b0))       registry[rd] <= reg_wr_dat;
+  end
+  
+  
 endmodule // registers

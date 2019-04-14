@@ -1,6 +1,7 @@
 `include "csr.sv"
 `include "IM.sv"
 `include "DM.sv"
+`include "core.sv"
 
 
 module riscv_wrapper(
@@ -9,51 +10,54 @@ module riscv_wrapper(
 	output trap
 );
   
-  wire [31:0] pc , csr_wr_data, csr_rd_data, m_addr, m_wr_dat;
-  reg [31:0]instr ,m_rd_dat;
-  wire [11:0]csr_rd_addr;
+  wire [31:0] pc ,instr_in, csr_wr_data, csr_rd_data, m_addr, m_rd_dat, m_wr_dat;
+  wire [11:0]csr_rd_addr, csr_wr_addr;
   
-  riscv_core cpu(
-            .clk(clk),.reset(reset),
-
-            .pc(pc),.instr(instr),
-
-            .trap(trap),
-                        
-            .csr(csr),
+  riscv_core core(
+        		.clk(clk),.reset(reset),
+                     
+        		.pc(pc),.instr_in(instr_in),
+         
+        		.trap(trap),
+                            
+            .csr_rd(csr_rd),
+        		.csr_wr(csr_wr),
             .csr_rd_addr(csr_rd_addr),
+        		.csr_wr_addr(csr_wr_addr),
             .csr_wr_data(csr_wr_data),
             .csr_rd_data(csr_rd_data),
             
-            .MemRead(MemRead),
-            .MemWrite(MemWrite),
+            .MemRead_l2(rd_en),
+        		.MemWrite_l2(wr_en),
             .m_addr(m_addr),
             .m_wr_dat(m_wr_dat),
             .m_rd_dat(m_rd_dat)
-           );
+            );
 
  IM ins_mem(.clk(clk),
             .reset(reset),
             .pc(pc),
-            .instr(instr)
+            .instr(instr_in)
            );
 
   
 cs_reg csre(.clk(clk),
-            .reset(reset),
-            .csr(csr),
+            .reset(reset),       
+            .csr_rd(csr_rd),
+    		    .csr_wr(csr_wr),
             .rd_addr(csr_rd_addr),
-            .csr_rd(csr_rd_data),
+            .rd_dat(csr_rd_data),
+            .wr_addr(csr_wr_addr),
             .wr_dat(csr_wr_data)
            );
   
-memory mem(.clk(clk),
-             .reset(reset),
-             .m_addr(m_addr),
-             .m_wr_dat(m_wr_dat),
-             .rd_en(MemRead),
-             .wr_en(MemWrite),
-             .m_rd_dat(m_rd_dat)
+data_memory mem(.clk(clk),
+            .reset(reset),
+            .m_addr(m_addr),
+            .m_wr_dat(m_wr_dat),
+            .rd_en(rd_en),
+            .wr_en(wr_en),
+            .m_rd_dat(m_rd_dat)
             );
   
 /*  
@@ -66,4 +70,7 @@ memory mem(.clk(clk),
     $display("---------------------------------------------------------------");
 end
   */
+  always @(pc) begin
+    $display("PC = %h : instr = %h", pc, instr_in);
+  end
   endmodule
