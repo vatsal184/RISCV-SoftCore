@@ -5,8 +5,8 @@
 `include "pc_control.sv"
 
 module riscv_core#(
-				parameter XLEN = 32,
-				IRQ = 0)(
+			parameter XLEN = 32,
+			IRQ = 0)(
   input clk,
   input reset,
   
@@ -140,7 +140,7 @@ end
 wire [31:0] alu_in1, alu_in2, Imm_pc, Imm_jalr;
 
 assign funct = instr[14:12];
-assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (csr_rd & (funct[1:0]== 2'b11)) ? 1 : 0 ; 
+assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (csr_rd & (funct[1:0]== 2'b11)) | (MemRead & (funct[2:1]==2'b10)) ? 1 : 0 ;
 assign alu_in1 = Alusrc1 ? pc : IF_out1;
 assign alu_in2 = Alusrc2 ? Imm : rd2;
 assign Imm_pc = jal ? se_J_imm : se_B_imm;
@@ -180,7 +180,7 @@ wire [31:0]alu_out, next_pc;
   always @ (posedge clk) begin
     reset_l2 <= reset_l1;
     csr_wr <= csr_rd;
-  	csr_wr_data <= csr_wr ? (funct[1] ? alu_out : alu_in1): 32'b0;
+    csr_wr_data <= csr_wr ? (funct[1] ? alu_out : alu_in1): 32'b0;
     m_addr <= alu_out;
     MemWrite_l2 <= MemWrite;
     MemRead_l2 <= MemRead;
