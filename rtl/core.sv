@@ -5,38 +5,38 @@
 `include "pc_control.sv"
 
 module riscv_core#(
-			parameter XLEN = 32,
-			IRQ = 0)(
-  input clk,
-  input reset,
-  
-  output reg [31:0]pc,
-  input [31:0]instr_in,
-  
-  output trap,
-  
-  // PLIC
-  input EIP,
-  input [31:0]irq_handler,
-  output IRQ_complete,
-  
-  
-  // CSR
-  output csr_rd,
-  output reg csr_wr, 
-  output reg [11:0]csr_rd_addr,
-  output reg [11:0]csr_wr_addr,
-  output reg [31:0] csr_wr_data,
-  input [31:0]csr_rd_data,
-  
-  
-  // DATA MEMORY
-  output reg MemRead_l2,
-  output reg MemWrite_l2,
-  output reg [31:0]m_addr,
-  output reg [31:0]m_wr_dat,
-  input [31:0]m_rd_dat
-  
+				parameter XLEN = 32,
+				IRQ = 0)(
+		  input clk,
+		  input reset,
+
+		  output reg [31:0]pc,
+		  input [31:0]instr_in,
+
+		  output reg trap,
+
+		  // PLIC
+		  input EIP,
+		  input [31:0]irq_handler,
+		  output IRQ_complete,
+
+
+		  // CSR
+		  output csr_rd,
+		  output reg csr_wr, 
+		  output reg [11:0]csr_rd_addr,
+		  output reg [11:0]csr_wr_addr,
+		  output reg [31:0] csr_wr_data,
+		  input [31:0]csr_rd_data,
+
+
+		  // DATA MEMORY
+		  output reg MemRead_l2,
+		  output reg MemWrite_l2,
+		  output reg [31:0]m_addr,
+		  output reg [31:0]m_wr_dat,
+		  input [31:0]m_rd_dat
+
 );
   
   
@@ -126,7 +126,7 @@ sign_extend_csr se_csr(.se_csr_in(instr[19:15]),
 wire [31:0] IF_out1;
 reg [31:0]Imm;
   
-assign IF_out1 = csr_rd & instr[14] ? se_csr_imm : rd1;
+assign IF_out1 = (csr_rd & instr[14]) ? se_csr_imm : rd1;
   
 always_comb begin
   case (im_sel)// Mux for Immediate select
@@ -139,9 +139,10 @@ end
 
 wire [31:0] alu_in1, alu_in2, Imm_pc, Imm_jalr;
 
+  
 assign funct = instr[14:12];
-assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (csr_rd & (funct[1:0]== 2'b11)) | (MemRead & (funct[2:1]==2'b10)) ? 1 : 0 ;
-assign alu_in1 = Alusrc1 ? pc : IF_out1;
+assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (MemRead & (funct[2:1]==2'b10)) ? 1 : 0 ; 
+assign alu_in1 = Alusrc1 ? pc : ((csr_rd & (funct[1:0]== 2'b11)) ? ~IF_out1 : IF_out1);
 assign alu_in2 = Alusrc2 ? Imm : rd2;
 assign Imm_pc = jal ? se_J_imm : se_B_imm;
 assign Imm_jalr = (jump & ~jal) ? (Imm & 32'hfffffffe) : 32'h0;  
@@ -151,7 +152,7 @@ assign csr_rd_addr = instr[31:20];
 wire [31:0]alu_out, next_pc;
   
   ALU compute (.reset(reset_l1),
-               .alu_in1(alu_in1),
+               .alu_in1(alu_in1), 
                .alu_in2(alu_in2),
                .ALUop(ALUop),
                .invert(invert),
@@ -178,7 +179,8 @@ wire [31:0]alu_out, next_pc;
   reg reset_l2;  
   
   always @ (posedge clk) begin
-    reset_l2 <= reset_l1;
+    trap <= (instr == 32'h00100073) | ((instr == 32'h0) & reset_l1) ? 1 : 0;
+    reset_l2 <= reset_l1; 
     csr_wr <= csr_rd;
     csr_wr_data <= csr_wr ? (funct[1] ? alu_out : alu_in1): 32'b0;
     m_addr <= alu_out;
@@ -197,7 +199,7 @@ wire [31:0]alu_out, next_pc;
   
 /////////////////////////////////////////////////////////////
 //	WB STAGE
-/////////////////////////////////////////////////////////////  
+/////////////////////////////////////////////////////////////
 
   
 always_comb begin
@@ -234,3 +236,4 @@ always_comb begin
 end 
   
 endmodule
+/////////////////////////////////////////////////////////////
