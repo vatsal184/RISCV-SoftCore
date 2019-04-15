@@ -1,23 +1,22 @@
-// load store unsigned
 
 module control_unit(
 	input [6:0]opcode,
-  	input reset,
-    input invert,
-  	input [2:0]funct,
-  	output [1:0]im_sel,
-    output jump,
-    output branch,
-    output Alusrc1,
-    output Alusrc2,
-    output regWrite,
-    output MemRead,
-    output MemWrite,
-    output jal,
-    output csr,
-    output [1:0]wr_sel,
-    output [2:0]ALUop,
-    output fence
+	input reset,
+	input invert,
+	input [2:0]funct,
+	output [1:0]im_sel,
+	output jump,
+	output branch,
+	output Alusrc1,
+	output Alusrc2,
+	output regWrite,
+	output MemRead,
+	output MemWrite,
+	output jal,
+	output csr,
+	output [1:0]wr_sel,
+	output [2:0]ALUop,
+	output fence
 	);
 
 wire rv = opcode[1] & opcode[0];
@@ -48,8 +47,8 @@ assign im_sel[1] = reset ? u_type | s_type : 0;
 assign wr_sel[0] = reset ? j_type | load_type | s_type : 0;
 assign wr_sel[1] = reset ? csr_type | j_type | (u_type&opcode[5]) : 0;
 assign ALUop[2] = reset ? ~(u_type | j_type | b_type | load_type | s_type ) | ((i_type | r_type) & funct[2]) | csr_type: 0;
-assign ALUop[1] = reset ? ~(u_type | j_type  | load_type | s_type) | ((i_type | r_type) & funct[1]) | (csr_type & funct[1]) | (b_type & funct[2]): 0;
-assign ALUop[0] = reset ? ~(u_type | j_type  | load_type | s_type) | ((i_type | r_type) & funct[0]) | (csr_type & funct[0]) | (b_type & funct[1]): 0;
+assign ALUop[1] = reset ? ~(u_type | j_type | s_type) | ((i_type | r_type) & funct[1]) | (csr_type & funct[1]) | (b_type & funct[2])  | (load_type & (funct[2:1]==2'b10)): 0;
+assign ALUop[0] = reset ? ~(u_type | j_type | s_type) | ((i_type | r_type) & funct[0]) | (csr_type & funct[0]) | (b_type & funct[1])  | (load_type & (funct[2:1]==2'b10)): 0;
 
 endmodule // control_unit
 
