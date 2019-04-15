@@ -13,26 +13,26 @@ module riscv_wrapper(
   wire [31:0] pc ,instr_in, csr_wr_data, csr_rd_data, m_addr, m_rd_dat, m_wr_dat;
   wire [11:0]csr_rd_addr, csr_wr_addr;
   
-  riscv_core core(
-        		.clk(clk),.reset(reset),
-                     
-        		.pc(pc),.instr_in(instr_in),
-         
-        		.trap(trap),
-                            
-            .csr_rd(csr_rd),
-        		.csr_wr(csr_wr),
-            .csr_rd_addr(csr_rd_addr),
-        		.csr_wr_addr(csr_wr_addr),
-            .csr_wr_data(csr_wr_data),
-            .csr_rd_data(csr_rd_data),
-            
-            .MemRead_l2(rd_en),
-        		.MemWrite_l2(wr_en),
-            .m_addr(m_addr),
-            .m_wr_dat(m_wr_dat),
-            .m_rd_dat(m_rd_dat)
-            );
+riscv_core core(
+		.clk(clk),.reset(reset),
+
+		.pc(pc),.instr_in(instr_in),
+
+		.trap(trap),
+
+		.csr_rd(csr_rd),
+		.csr_wr(csr_wr),
+		.csr_rd_addr(csr_rd_addr),
+		.csr_wr_addr(csr_wr_addr),
+		.csr_wr_data(csr_wr_data),
+		.csr_rd_data(csr_rd_data),
+
+		.MemRead_l2(rd_en),
+		.MemWrite_l2(wr_en),
+		.m_addr(m_addr),
+		.m_wr_dat(m_wr_dat),
+		.m_rd_dat(m_rd_dat)
+		);
 
  IM ins_mem(.clk(clk),
             .reset(reset),
@@ -70,7 +70,4 @@ data_memory mem(.clk(clk),
     $display("---------------------------------------------------------------");
 end
   */
-  always @(pc) begin
-    $display("PC = %h : instr = %h", pc, instr_in);
-  end
   endmodule
