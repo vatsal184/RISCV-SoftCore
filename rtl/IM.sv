@@ -13,9 +13,10 @@ initial begin
   $readmemh("ins_mem.txt",IM);
 end
   
-//assign instr = reset ? IM[pc >> 2] : 32'b0;
+
 always_comb begin
 	instr = reset ? IM[pc >> 2] : 32'b0;
+	$display("PC = %h : instr = %h", pc, instr);
   end
 
 endmodule
