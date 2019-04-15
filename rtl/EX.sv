@@ -19,11 +19,11 @@ always_comb begin
   if (reset) begin    
       case (ALUop)
         3'b000: alu_res = $signed(alu_in1) + $signed(alu2);		// add
-        3'b001: alu_res = alu_in1 << alu2;						// Shift left
+        3'b001: alu_res = alu_in1 << alu_in2;						// Shift left
         3'b010: alu_res = $signed(alu_in1) - $signed(alu2);		// set if less
         3'b011: alu_res = alu_in1 - alu2;							// set if less Unsigned
         3'b100: alu_res = $signed(alu_in1) ^ $signed(alu2);		// XOR
-        3'b101: begin alu_res = alu_in1 >> alu2;					// Shift right
+        3'b101: begin alu_res = alu_in1 >> alu_in2;					// Shift right
                   if (invert ) alu_res[31] = alu_in1[31];
                 end
         3'b110: alu_res = {1'b0,alu_in1} | {1'b0,alu2};			// OR
@@ -47,8 +47,6 @@ always_comb begin
   end
 end
   
-  
-//assign temp = ~alu_in2;  
-assign alu2 = invert ? ~alu_in2: alu_in2;
+assign alu2 = invert ? (~alu_in2 + 32'b1): alu_in2;
 
 endmodule
