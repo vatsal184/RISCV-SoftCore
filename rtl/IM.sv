@@ -7,16 +7,16 @@ module IM(
     );
     
         
-  reg [31:0] IM [1023:0];
+  reg [31:0] IM [2047:0];
   
 initial begin 
   $readmemh("ins_mem.txt",IM);
 end
-  
 
 always_comb begin
 	instr = reset ? IM[pc >> 2] : 32'b0;
-	$display("PC = %h : instr = %h", pc, instr);
+  	$display("PC = %h : instr = %h", pc, instr);
   end
 
+ 
 endmodule

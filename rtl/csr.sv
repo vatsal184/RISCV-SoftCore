@@ -14,6 +14,9 @@ module cs_reg(
 
   initial begin
     csrm[3860] = 32'h0;
+    csrm[768] = 32'h0;
+    csrm[833] = 32'h0;
+    csrm[770] = 32'h0; 
   end
   
   always_comb begin

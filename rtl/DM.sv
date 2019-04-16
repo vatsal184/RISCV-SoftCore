@@ -1,4 +1,3 @@
-// either read or write
 module data_memory(
 	input clk,
   	input reset,
@@ -10,11 +9,26 @@ module data_memory(
 	);
 
 
-  reg [31:0]mem[(2**25) - 1:0];
+  reg [31:0]mem[(2**30) - 1:0];
+  
+  initial begin
+    mem[49152] = 32'h0;
+    mem[49168] = 32'h0;
+    mem[49184] = 32'h0;
+    mem[49200] = 32'h0;
+    mem[49216] = 32'h0;
+    mem[49232] = 32'h0;
+    mem[49248] = 32'h0;
+    mem[49264] = 32'h0;
+    mem[49280] = 32'h0;
+  end
  
   always @(posedge clk) begin
     m_rd_dat <= (rd_en & reset) ? mem[m_addr << 2] : 32'h0;
-    if (wr_en & reset)	mem[m_addr << 2] <= m_wr_dat;
+    if  (wr_en & reset) begin
+      	mem[m_addr << 2] <= m_wr_dat;
+        $display("%h",m_wr_dat);
+    end
   end
 
 endmodule

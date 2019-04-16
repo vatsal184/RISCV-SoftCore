@@ -9,26 +9,12 @@ module registers(
 	output reg [31:0] rd1,
 	output reg [31:0] rd2
 	);
-
+ 
   reg [31:0] registry [31:1];
   
   initial begin
-    registry[1] = 32'h0;
-    registry[2] = 32'h0;
-    registry[3] = 32'h0;
-    registry[4] = 32'h0;
-    registry[5] = 32'h0;
-    registry[6] = 32'h0;
-    registry[7] = 32'h0;
-    registry[8] = 32'h0;
-    registry[9] = 32'h0;
-    registry[10] = 32'h0;
-    registry[11] = 32'h0;
-    registry[12] = 32'h0;
-    registry[13] = 32'h0;
-    registry[14] = 32'h0;
-    registry[15] = 32'h0;
-    registry[16] = 32'h0;
+    for (int i = 1; i<32; ++i)
+      registry[i] = 32'h0;
   end
   
   always_comb begin
@@ -38,8 +24,8 @@ module registers(
   
   
   always@ (posedge clk) begin    
-    if(reset & regWrite & (rd!=5'b0))       registry[rd] <= reg_wr_dat;
+    if(reset & regWrite & (rd!=5'b0))     registry[rd] <= reg_wr_dat;
   end
   
   
-endmodule // registers
+endmodule

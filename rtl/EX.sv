@@ -38,7 +38,7 @@ always_comb begin
         alu_out = alu_res[31:0];
         less_than = 1'b0;
       end
-      zero = (alu_res === 32'b0) ? 1 : 0;
+      zero = (alu_out === 32'b0) ? 1 : 0;
   end
   else begin
     alu_out = 32'b0;
@@ -47,6 +47,7 @@ always_comb begin
   end
 end
   
-assign alu2 = invert ? (~alu_in2 + 32'b1): alu_in2;
+  
+  assign alu2 = invert ? (~alu_in2 + 32'b1): alu_in2;
 
 endmodule
