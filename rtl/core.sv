@@ -139,7 +139,7 @@ wire [31:0] alu_in1, alu_in2, Imm_pc, Imm_jalr;
 
 assign IF_out1 = (csr_rd & instr[14]) ? se_csr_imm : (rs1 == rd_l3 ? reg_wr_dat : rd1);  
 assign funct = instr[14:12];
-assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (MemRead & (funct[2:1]==2'b10)) ? 1 : 0 ; 
+assign invert = ((instr[31:25] == 7'b0100000) & ((funct == 3'b101) | (funct == 3'b000))) | (MemRead & (funct[2:1]==2'b10)) ? 1 : 0 ; 
   
 assign alu_in1 = Alusrc1 ? pc_l1 : ((csr_rd & (funct[1:0]== 2'b11)) ? ~IF_out1 : IF_out1);
 assign alu_in2 = Alusrc2 ? Imm : (rs2 == rd_l3 ? reg_wr_dat : rd2);
