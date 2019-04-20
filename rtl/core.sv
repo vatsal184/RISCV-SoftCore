@@ -14,12 +14,12 @@ module riscv_core#(
   input [31:0]instr_in,
   
   output reg trap,
-  
+/*  
   // PLIC
   input EIP,
   input [31:0]irq_handler,
   output IRQ_complete,
-  
+  */
   
   // CSR
   output csr_rd,
@@ -84,11 +84,14 @@ reg reset_l1;
   
   
 wire [31:0] rd1, rd2;
+wire [4:0] rs1, rs2;
 reg [31:0] reg_wr_dat;
 reg [4:0] rd_l3; 
 reg regWrite_l3;
-  registers regfetch (.clk(clk),		.reset(reset_l1),
-                    .rs1(instr[19:15]),		.rs2(instr[24:20]),
+  assign rs1 = instr[19:15];
+  assign rs2 = instr[24:20];
+registers regfetch (.clk(clk),		.reset(reset_l1),
+                    .rs1(rs1),		.rs2(rs2),
                     .rd1(rd1),				.rd2(rd2),
                     .rd(rd_l3),
                     .reg_wr_dat(reg_wr_dat),
@@ -123,8 +126,6 @@ sign_extend_csr se_csr(.se_csr_in(instr[19:15]),
 wire [31:0] IF_out1;
 reg [31:0]Imm;
   
-assign IF_out1 = (csr_rd & instr[14]) ? se_csr_imm : rd1;
-  
 always_comb begin
   case (im_sel)
   2'b00: Imm = csr_rd_data;
@@ -136,16 +137,16 @@ end
 
 wire [31:0] alu_in1, alu_in2, Imm_pc, Imm_jalr;
 
-  
+assign IF_out1 = (csr_rd & instr[14]) ? se_csr_imm : (rs1 == rd_l3 ? reg_wr_dat : rd1);  
 assign funct = instr[14:12];
 assign invert = ((instr[31:25] == 7'b0100000) & (funct == ALUop)) | (MemRead & (funct[2:1]==2'b10)) ? 1 : 0 ; 
   
 assign alu_in1 = Alusrc1 ? pc_l1 : ((csr_rd & (funct[1:0]== 2'b11)) ? ~IF_out1 : IF_out1);
-assign alu_in2 = Alusrc2 ? Imm : rd2;
+assign alu_in2 = Alusrc2 ? Imm : (rs2 == rd_l3 ? reg_wr_dat : rd2);
   
 assign Imm_pc = jal ? se_J_imm : se_B_imm;
 assign Imm_jalr = (jump & ~jal) ? (Imm & 32'hfffffffe) : 32'h0;
-  
+   
 assign csr_wr_addr = instr[31:20];
 assign csr_rd_addr = instr[31:20];   
 
@@ -166,13 +167,13 @@ pc_control hw(.reset(reset_l1),
                 .jal(jal),
                 .zero(zero),
                 .less_than(less_than),
-              	.branch(branch),			// branch signal back track
+              	.branch(branch),
                 .jump(jump),
                 .Imm_jalr(Imm_jalr),
                 .next_pc(next_pc));
 
   
-  reg [31:0] Imm_l2, pc_l2, next_pc_l2;
+  reg [31:0] Imm_l2, pc_l2;
   reg [4:0] rd_l2;
   reg [2:0] ALUop_l2, funct_l2;
   reg [1:0] wr_sel_l2;
@@ -183,8 +184,10 @@ pc_control hw(.reset(reset_l1),
     
     reset_l2 <= reset_l1; 
     trap <= (instr == 32'h00100073) | ((instr == 32'h0) & reset_l1) ? 1 : 0;
-    pc_l2 <= pc_l1;
-    next_pc_l2 <= next_pc;
+    pc_l2 <= pc_l1;     
+    
+    pc <= reset_l1 ? next_pc : 32'h0;
+    
     
     csr_wr <= csr_rd;
   	csr_wr_data <= csr_wr ? (funct[1] ? alu_out : alu_in1): 32'b0;
@@ -218,11 +221,10 @@ pc_control hw(.reset(reset_l1),
 /////////////////////////////////////////////////////////////
   
 always @ (posedge clk) begin
-    pc <= reset_l2 ? next_pc_l2 : 32'h0;
     regWrite_l3 <= regWrite_l2;
     rd_l3 <= rd_l2;
 
-   	if (reset_l2) begin		// different reset issue
+   	if (reset_l2) begin
       case (wr_sel_l2)
         2'b00: reg_wr_dat <= m_addr;
         2'b01: if (MemRead_l2) begin
